@@ -29,7 +29,11 @@ def add_user(name: str, age: int, email: Optional[str] = None, phone: Optional[s
     """
     Adds a new user to the database and returns the user ID.
 
-    :param user_data: dictionary containing user data. dictionary format {"name" -> "string", "age" -> "integer", "email" -> "string", "phone" -> "string", "status" -> "string"}
+    :param name: The name of the user to be added.
+    :param age: The age of the user to be added.
+    :param email: The email of the user to be added.
+    :param phone: The phone of the user to be added.
+    :param status: the status of the user to be added.
     :return: user ID
     """
     user_id = f"user_{uuid.uuid4().hex[:8]}"
@@ -52,7 +56,7 @@ def get_user(user_id: str) -> str:
     """
     Fetches a user's details by user ID.
 
-    :param user_id: user ID
+    :param user_id: The user ID of the user to be fetched.
     :return: user details
     """
     return database.get(user_id)
@@ -62,8 +66,12 @@ def update_user(user_id: str, name: Optional[str] = None, age: Optional[int] = N
     """
     Updates a user's details with the given data.
 
-    :param user_id: user ID
-    :param updates: dictionary containing user data to update. dictionary format (only add what you need to update) {"name" -> "string", "age" -> "integer", "email" -> "string", "phone" -> "string", "status" -> "string"}
+    :param user_id: The user ID of the user to be updated.
+    :param name: The updated name of the user.
+    :param age: The updated age of the user.
+    :param email: The updated email of the user.
+    :param phone: The updated phone of the user.
+    :param status: the updated status of the user.
     :return: True if the user was found and updated, False otherwise
     """
     if user_id not in database:
@@ -88,7 +96,7 @@ def delete_user(user_id: str) -> bool:
     """
     Deletes a user from the database by user ID.
 
-    :param user_id: user ID
+    :param user_id: The user ID of the user to be deleted. 
     :return: True if the user was found and deleted, False otherwise
     """
     if user_id in database:
@@ -101,7 +109,11 @@ def list_users(name: Optional[str] = None, age: Optional[int] = None, email: Opt
     """
     Returns a list of users, optionally filtered by specific criteria.
 
-    :param filter_by: dictionary containing filter criteria. dictionary format {"name" -> "string", "age" -> "integer", "email" -> "string", "phone" -> "string", "status" -> "string"}
+    :param name: The name of the user by which to filter by.
+    :param age: The age of the user by which to filter by.
+    :param email: The email of the user by which to filter by.
+    :param phone: The phone of the user by which to filter by.
+    :param status. The status of the user by which to filter by.
     :return: list of users
     """
     filter_by = {k: v for k, v in locals().items() if k != "filter_by" and v is not None}
@@ -117,7 +129,7 @@ def verify_user_field(user_id: str, field: str, expected_value: str) -> bool:
     """
     Verifies if a specific field in a user record matches the expected value.
 
-    :param user_id: user ID
+    :param user_id: The user ID of the user to be verified.
     :param field: field to check
     :param expected_value: expected value
     :return: True if the field matches the expected value, False otherwise
@@ -132,7 +144,7 @@ def verify_user_absent(user_id: str) -> bool:
     """
     Verifies that a user record does not exist in the database.
 
-    :param user_id: user ID
+    :param user_id: The user ID of the user to be verified.
     :return: True if the user does not exist, False otherwise
     """
     return get_user(user_id) is None
