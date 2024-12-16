@@ -25,7 +25,7 @@ def generate_timestamp():
     return datetime.utcnow().isoformat() + "Z"
 
 @tool()
-def add_user(user_data: Dict[str, str]) -> str:
+def add_user(name: str, age: int, email: Optional[str] = None, phone: Optional[str] = None, status: str = "active") -> str:
     """
     Adds a new user to the database and returns the user ID.
 
@@ -36,11 +36,11 @@ def add_user(user_data: Dict[str, str]) -> str:
     timestamp = generate_timestamp()
     new_user = {
         "id": user_id,
-        "name": user_data.get("name"),
-        "age": user_data.get("age"),
-        "email": user_data.get("email"),
-        "phone": user_data.get("phone"),
-        "status": user_data.get("status", "active"),
+        "name": name,
+        "age": age,
+        "email": email,
+        "phone": phone,
+        "status": status,
         "created_at": timestamp,
         "updated_at": timestamp
     }
@@ -58,7 +58,7 @@ def get_user(user_id: str) -> str:
     return database.get(user_id)
 
 @tool()
-def update_user(user_id: str, updates: Dict[str, str]) -> bool:
+def update_user(user_id: str, name: Optional[str] = None, age: Optional[int] = None, email: Optional[str] = None, phone: Optional[str] = None, status: Optional[str] = None) -> bool:
     """
     Updates a user's details with the given data.
 
@@ -70,12 +70,19 @@ def update_user(user_id: str, updates: Dict[str, str]) -> bool:
         return False
     user = database[user_id]
     timestamp = generate_timestamp()
-    for key, value in updates.items():
-        if key in user:
-            user[key] = value
+    if name is not None:
+        user["name"] = name
+    if age is not None:
+        user["age"] = age
+    if email is not None:
+        user["email"] = email
+    if phone is not None:
+        user["phone"] = phone
+    if status is not None:
+        user["status"] = status
     user["updated_at"] = timestamp
     return True
-
+    
 @tool()
 def delete_user(user_id: str) -> bool:
     """
@@ -90,22 +97,21 @@ def delete_user(user_id: str) -> bool:
     return False
 
 @tool()
-def list_users(filter_by: Dict[str, str] = None) -> List[Dict[str, str]]:
+def list_users(name: Optional[str] = None, age: Optional[int] = None, email: Optional[str] = None, phone: Optional[str] = None, status: Optional[str] = None) -> List[Dict]:
     """
     Returns a list of users, optionally filtered by specific criteria.
 
     :param filter_by: dictionary containing filter criteria. dictionary format {"name" -> "string", "age" -> "integer", "email" -> "string", "phone" -> "string", "status" -> "string"}
     :return: list of users
     """
-    if not filter_by:
-        return list(database.values())
+    filter_by = {k: v for k, v in locals().items() if k != "filter_by" and v is not None}
     filtered_users = []
     for user in database.values():
         match = all(user.get(key) == value for key, value in filter_by.items())
         if match:
             filtered_users.append(user)
     return filtered_users
-
+    
 @tool()
 def verify_user_field(user_id: str, field: str, expected_value: str) -> bool:
     """
@@ -148,14 +154,14 @@ prompts = [
     {
         "prompt": "Update the email and phone number of the user with name 'Alice' to 'alice@example.com' and '555-1234', respectively. Retrieve the updated user details to ensure the changes were applied.",
         "functions": [
-            'add_user({"name": "Alice", "age": 25})',
+            'add_user(name: "Alice", age: 25)',
         ],
     },
     {
         "prompt": "List all users who do not have an email address. Update their profile to set the email as 'default@example.com'. Retrieve one of the updated users to confirm the change.",
         "functions": [
-            'add_user({"name": "John", "age": 30, "email": None})',
-            'add_user({"name": "Jane", "age": 25, "email": None})',
+            'add_user(name: "John", age: 30, email: None)',
+            'add_user(name: "Jane", age: 25, email: None)',
         ],
     },
     {
