@@ -1,6 +1,10 @@
 import uuid
 from datetime import datetime
 
+from llm_tool import tool
+
+from typing import Dict, List
+
 # {
 #   "id": "string",            // Unique identifier for the user (e.g., "user_123").
 #   "name": "string",          // Full name of the user.
@@ -20,8 +24,14 @@ def generate_timestamp():
     """Generates the current timestamp in ISO 8601 format."""
     return datetime.utcnow().isoformat() + "Z"
 
-def add_user(user_data):
-    """Adds a new user to the database and returns the user ID."""
+@tool()
+def add_user(user_data: Dict[str, str]) -> str:
+    """
+    Adds a new user to the database and returns the user ID.
+
+    :param user_data: dictionary containing user data. dictionary format {"name" -> "string", "age" -> "integer", "email" -> "string", "phone" -> "string", "status" -> "string"}
+    :return: user ID
+    """
     user_id = f"user_{uuid.uuid4().hex[:8]}"
     timestamp = generate_timestamp()
     new_user = {
@@ -37,12 +47,25 @@ def add_user(user_data):
     database[user_id] = new_user
     return user_id
 
-def get_user(user_id):
-    """Fetches a user's details by user ID."""
+@tool()
+def get_user(user_id: str) -> str:
+    """
+    Fetches a user's details by user ID.
+
+    :param user_id: user ID
+    :return: user details
+    """
     return database.get(user_id)
 
-def update_user(user_id, updates):
-    """Updates a user's details with the given data."""
+@tool()
+def update_user(user_id: str, updates: Dict[str, str]) -> bool:
+    """
+    Updates a user's details with the given data.
+
+    :param user_id: user ID
+    :param updates: dictionary containing user data to update. dictionary format (only add what you need to update) {"name" -> "string", "age" -> "integer", "email" -> "string", "phone" -> "string", "status" -> "string"}
+    :return: True if the user was found and updated, False otherwise
+    """
     if user_id not in database:
         return False
     user = database[user_id]
@@ -53,15 +76,27 @@ def update_user(user_id, updates):
     user["updated_at"] = timestamp
     return True
 
-def delete_user(user_id):
-    """Deletes a user from the database by user ID."""
+@tool()
+def delete_user(user_id: str) -> bool:
+    """
+    Deletes a user from the database by user ID.
+
+    :param user_id: user ID
+    :return: True if the user was found and deleted, False otherwise
+    """
     if user_id in database:
         del database[user_id]
         return True
     return False
 
-def list_users(filter_by=None):
-    """Returns a list of users, optionally filtered by specific criteria."""
+@tool()
+def list_users(filter_by: Dict[str, str] = None) -> List[Dict[str, str]]:
+    """
+    Returns a list of users, optionally filtered by specific criteria.
+
+    :param filter_by: dictionary containing filter criteria. dictionary format {"name" -> "string", "age" -> "integer", "email" -> "string", "phone" -> "string", "status" -> "string"}
+    :return: list of users
+    """
     if not filter_by:
         return list(database.values())
     filtered_users = []
@@ -71,19 +106,65 @@ def list_users(filter_by=None):
             filtered_users.append(user)
     return filtered_users
 
-def verify_user_field(user_id, field, expected_value):
-    """Verifies if a specific field in a user record matches the expected value."""
+@tool()
+def verify_user_field(user_id: str, field: str, expected_value: str) -> bool:
+    """
+    Verifies if a specific field in a user record matches the expected value.
+
+    :param user_id: user ID
+    :param field: field to check
+    :param expected_value: expected value
+    :return: True if the field matches the expected value, False otherwise
+    """
     user = get_user(user_id)
     if not user:
         return False
     return user.get(field) == expected_value
 
-def verify_user_absent(user_id):
-    """Verifies that a user record does not exist in the database."""
+@tool()
+def verify_user_absent(user_id: str) -> bool:
+    """
+    Verifies that a user record does not exist in the database.
+
+    :param user_id: user ID
+    :return: True if the user does not exist, False otherwise
+    """
     return get_user(user_id) is None
 
+tool_definitions = [
+    add_user.definition,
+    get_user.definition,
+    update_user.definition,
+    delete_user.definition,
+    list_users.definition,
+    verify_user_field.definition,
+    verify_user_absent.definition
+]
 
-
+prompts = [
+    {
+        "prompt": "Create a new user named 'Alice' with an age of 25. Retrieve the details of this user and confirm the age field is correct.",
+    },
+    {
+        "prompt": "Update the email and phone number of the user with name 'Alice' to 'alice@example.com' and '555-1234', respectively. Retrieve the updated user details to ensure the changes were applied.",
+        "functions": [
+            'add_user({"name": "Alice", "age": 25})',
+        ],
+    },
+    {
+        "prompt": "List all users who do not have an email address. Update their profile to set the email as 'default@example.com'. Retrieve one of the updated users to confirm the change.",
+        "functions": [
+            'add_user({"name": "John", "age": 30, "email": None})',
+            'add_user({"name": "Jane", "age": 25, "email": None})',
+        ],
+    },
+    {
+        "prompt": "Add a new user named 'Charlie' aged 40 with his status set to 'active'. Then, set his status to 'inactive'. FInally, retrieve the user details to confirm the update."
+    },
+    {
+        "prompt": "Create a new user named 'Eve' with an age of 22. Retrieve the user details, update their email to 'eve@example.com', and finally delete the user. Confirm the deletion by trying to fetch the record.",
+    }
+]
 # Prompt 1: "Create a new user named 'Alice' with an age of 25. Retrieve the details of this user and confirm the age field is correct."
 # user_id = add_user({"name": "Alice", "age": 25, "email": None, "phone": None})
 # user = get_user(user_id)
@@ -92,13 +173,14 @@ def verify_user_absent(user_id):
 
 # Prompt 2: "Update the email and phone number of the user with ID 'user_123' to 'alice@example.com' and '555-1234', respectively. Retrieve the updated user details to ensure the changes were applied."
 # user_id = add_user({"name": "Alice", "age": 25})
+
 # update_successful = update_user(user_id, {"email": "alice@example.com", "phone": "555-1234"})
 # email_correct = verify_user_field(user_id, "email", "alice@example.com")
 # phone_correct = verify_user_field(user_id, "phone", "555-1234")
 
 
 
-# Prompt 3: "List all users who do not have an email address. Update their profile to set the email as 'default@example.com'. Retrieve one of the updated users to confirm the change."add_user({"name": "John", "age": 30, "email": None})
+# Prompt 3: "List all users who do not have an email address. Update their profile to set the email as 'default@example.com'. Retrieve one of the updated users to confirm the change."
 # add_user({"name": "John", "age": 30, "email": None})
 # add_user({"name": "Jane", "age": 25, "email": None})
 
